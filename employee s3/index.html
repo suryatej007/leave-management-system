@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Registration Form</title>
+    <!-- Add Bootstrap CSS link -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+</head>
+<body class="bg-light" style="display:flex;align-items: center;justify-content: center;">
+    <div>
+        <div class="container mt-4">
+            <h2 class="text-center mb-4">Leave Request Form</h2>
+
+            <form id="registrationForm" style="width: 400px;">
+                <div class="form-group">
+                    <label for="EmployeeId">EmployeeId:</label>
+                    <input type="text" class="form-control" id="EmployeeId" name="EmployeeId" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="ApplicantEmail">ApplicantEmail:</label>
+                    <input type="text" class="form-control" id="ApplicantEmail" name="ApplicantEmail" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="LeaveDates">LeaveDates:</label>
+                    <input type="text" class="form-control" id="LeaveDates" name="LeaveDates" required>
+                </div>
+                <center><button type="button" class="btn btn-primary" onclick="registerStudent()">Submit</button></center>
+                <div class="text-center mt-4">
+                    <a href="employeedash.html" class="btn btn-secondary">Back to Employee Dashboard</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Bootstrap JS and Popper.js links (required for Bootstrap functionality) -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+    <script>
+        function registerStudent() {
+            const form = document.getElementById("registrationForm");
+            const formData = new FormData(form);
+
+            const studentData = {};
+            formData.forEach((value, key) => {
+                studentData[key] = value;
+            });
+
+            fetch('https://x1oohtjla8.execute-api.us-east-1.amazonaws.com/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(studentData),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                sendEmailToHR(studentData);
+                showSuccessAlert();
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                // You can handle error actions here
+            });
+        }
+
+        function sendEmailToHR(formData) {
+          console.log(formData);
+            fetch('https://pqhzazlbwk.execute-api.us-east-1.amazonaws.com/test', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    console.error('Error sending email to HR');
+                }
+            })
+            .catch(error => {
+                console.error('Error sending email to HR:', error);
+            });
+        }
+
+        function showSuccessAlert() {
+            const alertContainer = document.createElement("div");
+            alertContainer.className = "alert alert-success mt-3";
+            alertContainer.textContent = "Leave details submitted successfully!";
+
+            const form = document.getElementById("registrationForm");
+            form.parentNode.insertBefore(alertContainer, form.nextSibling);
+
+            // Remove the alert after a few seconds (optional)
+            setTimeout(() => {
+                alertContainer.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

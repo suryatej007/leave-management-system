@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Student Details</title>
+    <!-- Add Bootstrap CSS link -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+</head>
+<body class="bg-light">
+
+    <div class="container mt-5">
+        <h2 class="text-center mb-4">Get Employee Details</h2>
+
+        <form>
+            <div class="form-group">
+                <label for="studentId">Enter Employee ID:</label>
+                <input type="text" class="form-control" id="EmployeeId" required>
+            </div>
+
+            <center><button type="button" class="btn btn-primary" onclick="getEmployeeDetails()">Get Details</button></center>
+        </form>
+
+        <div id="EmployeeDetails" class="mt-4"></div>
+
+        <!-- Back button to HR Dashboard -->
+        <div class="text-center mt-4">
+            <a href="employeedash.html" class="btn btn-secondary">Back to Employee Dashboard</a>
+        </div>
+    </div>
+
+    <!-- Add Bootstrap JS and Popper.js links (required for Bootstrap functionality) -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+    <script>
+        function getEmployeeDetails() {
+            const EmployeeId = document.getElementById("EmployeeId").value;
+    
+            fetch(`https://x1oohtjla8.execute-api.us-east-1.amazonaws.com/add/getemployeedetails?EmployeeId=${EmployeeId}`, {
+                method: 'GET',
+            })
+            .then(response => response.json())
+            .then(data => {
+                const detailsContainer = document.getElementById("EmployeeDetails");
+                detailsContainer.innerHTML = '';
+    
+                
+                    const detailsHTML = `
+                        <p><strong>EMPLOYEE ID:</strong> ${data.EmployeeId}</p>
+                        <p><strong>EMPLOYEE EMAIL:</strong> ${data.ApplicantEmail}</p>
+                        <p><strong>EMPLOYEE STATUS:</strong> ${data.Status}</p>
+                        <p><strong>EMPLOYEE LEAVE DATE:</strong> ${data.LeaveDates}</p>
+                    `;
+                    detailsContainer.innerHTML = detailsHTML;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    </script>
+    
+
+</body>
+</html>
