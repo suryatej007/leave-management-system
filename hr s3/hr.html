@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leave Request Approvals</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+
+    tr:hover {
+      background-color: #ddd;
+    }
+
+    button {
+      cursor: pointer;
+      padding: 5px 10px;
+      border: none;
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+    .notification-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+    }
+
+    .notification {
+      background-color: #333;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .notification.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pending Leave Requests</h1>
+  <table id="leaveRequestsTable">
+    <thead>
+      <tr>
+        <th>Employee ID</th>
+        <th>Email</th>
+        <th>Status</th>
+        <th>Leave Dates</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <div id="notificationContainer" class="notification-container"></div> <!-- Notification container -->
+
+  <script>
+    const tableBody = document.getElementById('leaveRequestsTable').getElementsByTagName('tbody')[0];
+    const notificationContainer = document.getElementById('notificationContainer');
+    function fetchLeaveRequests() {
+      fetch('https://vbm68bvi61.execute-api.us-east-1.amazonaws.com/approve') // Replace with your API Gateway endpoint
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
+        .then(data => {
+          tableBody.innerHTML = ''; // Clear existing data
+          if (typeof data === 'object' && data.hasOwnProperty('body')) {
+            // Parse the JSON string in the 'body' property
+            const leaveRequests = JSON.parse(data.body);
+            if (Array.isArray(leaveRequests)) {
+              leaveRequests.forEach(request => {
+                if (request.Status === 'Pending') {
+                  const row = document.createElement('tr');
+                  const employeeIdCell = document.createElement('td');
+                  employeeIdCell.textContent = request.EmployeeId;
+                  row.appendChild(employeeIdCell);
+                  const emailCell = document.createElement('td');
+                  emailCell.textContent = request.ApplicantEmail;
+                  row.appendChild(emailCell);
+                  const statusCell = document.createElement('td');
+                  statusCell.textContent = request.Status;
+                  row.appendChild(statusCell);
+                  const leaveDatesCell = document.createElement('td');
+                  leaveDatesCell.textContent = request.LeaveDates;
+                  row.appendChild(leaveDatesCell);
+                  const actionCell = document.createElement('td');
+                  const approveButton = document.createElement('button');
+                  approveButton.textContent = 'Approve';
+                  approveButton.addEventListener('click', () => handleAction(request.EmployeeId, request.LeaveDates, 'approved'));
+                  actionCell.appendChild(approveButton);
+                  const rejectButton = document.createElement('button');
+                  rejectButton.textContent = 'Reject';
+                  rejectButton.addEventListener('click', () => handleAction(request.EmployeeId, request.LeaveDates, 'rejected'));
+                  actionCell.appendChild(rejectButton);
+                  row.appendChild(actionCell);
+                  tableBody.appendChild(row);
+                }
+              });
+            } else {
+              console.error('Error: Expected an array of leave requests, but received:', leaveRequests);
+              // Optionally, display an error message to the user
+            }
+          } else {
+            console.error('Error: Unexpected response format:', data);
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
+    }
+
+    function handleAction(EmployeeId, leaveDates, status, applicantEmail) {
+      console.log(EmployeeId);
+      fetch('https://59e9jio9l2.execute-api.us-east-1.amazonaws.com/post', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ EmployeeId, leaveDates, status })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        fetchLeaveRequests();
+        if (status === 'approved') {
+          showNotification(`Leave request approved for Employee ID ${EmployeeId}`);
+          sendEmail(EmployeeId,status);
+        } else if (status === 'rejected') {
+          showNotification(`Leave request rejected for Employee ID ${EmployeeId}`);
+          sendEmail(EmployeeId,status);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error occurred while processing the action', 'error');
+      });
+    }
+    function sendEmail(EmployeeId,status) { 
+  const requestBody = {
+    "EmployeeId": EmployeeId,
+    "status":status
+  };
+  console.log('Request Body:', requestBody);
+
+  fetch('https://fbp96c72rg.execute-api.us-east-1.amazonaws.com/test', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(requestBody)
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    // Assuming successful response means email sent
+    showNotification(`Email sent for Employee ID: ${EmployeeId}`, 'success');
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showNotification('Error occurred while sending email', 'error');
+  });
+}
+
+
+    // function sendEmail(employeeId,applicantEmail, leaveDates, status) {
+    //   const requestBody = {
+    //     "EmployeeId": employeeId,
+    //     "LeaveDates": leaveDates,
+    //     "status": status,
+    //     "ApplicantEmail": applicantEmail
+    //   };
+    //   console.log('Request Body:', requestBody);
+
+    //   fetch('https://pqhzazlbwk.execute-api.us-east-1.amazonaws.com/test', {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json'
+    //     },
+    //     body: JSON.stringify(requestBody)
+    //   })
+    //   .then(response => {
+    //     if (!response.ok) {
+    //       throw new Error('Network response was not ok');
+    //     }
+    //     // Assuming successful response means email sent
+    //     showNotification(`Email sent to ${applicantEmail}`, 'success');
+    //   })
+    //   .catch(error => {
+    //     console.error('Error:', error);
+    //     showNotification('Error occurred while sending email', 'error');
+    //   });
+    // }
+
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      notification.classList.add('notification', type);
+      notification.textContent = message;
+      notificationContainer.appendChild(notification);
+      setTimeout(() => {
+        notification.classList.add('show');
+      }, 100);
+      setTimeout(() => {
+        notification.remove();
+      }, 5000);
+    }
+
+    fetchLeaveRequests();
+  </script>
+</body>
+</html>
